@@ -1,6 +1,6 @@
 # This is a basic workflow that is manually triggered
 
-name: Sprint report creation
+name: Monthly report creation
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
@@ -9,7 +9,7 @@ on:
 #     branches: [ add_gh_report ]
   schedule:
     # * is a special character in YAML so you have to quote this string
-    - cron:  '59 23 * * 1'
+    - cron:  '59 23 1 * *'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -25,7 +25,7 @@ jobs:
         node-version: 12
     # Runs a single command using the runners shell
     - run: npm install --global --registry https://npm.lisk.com @liskhq/ghutil
-    - run: ghutil report:milestone -t ${{ secrets.GH_TOKEN }} LiskHQ/lisk-sdk --state all --include-closed --limit 2 --output sdk-report.md
+    - run: ghutil report:milestone -t ${{ secrets.GH_TOKEN }} LiskHQ/lisk-sdk --state closed --include-closed --limit 3 --output sdk-report.md
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
