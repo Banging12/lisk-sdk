@@ -1,0 +1,30 @@
+# This is a basic workflow that is manually triggered
+
+name: Sprint report creation
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+    branches: [ add_gh_report ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "greet"
+  greet:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - name: Use Node.js 12
+      uses: actions/setup-node@v2
+      with:
+        node-version: 12
+    # Runs a single command using the runners shell
+    - run: npm install --global --registry https://npm.lisk.com @liskhq/ghutil
+    - run: ghutil report:milestone -t ${{ secrets.GH_TOKEN }} LiskHQ/lisk-sdk --state all --include-closed --limit 2 --output sdk-report.md
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v2
+      with:
+        name: sdk-report
+        path: sdk-report.md
