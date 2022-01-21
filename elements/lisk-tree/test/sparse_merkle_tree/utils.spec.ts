@@ -28,6 +28,7 @@ import {
 	parseBranchData,
 	parseLeafData,
 	binaryExpansion,
+	splitKeys,
 } from '../../src/sparse_merkle_tree/utils';
 
 const binarySampleData = [
@@ -530,5 +531,13 @@ describe('utils', () => {
 				leftHash,
 				rightHash,
 			}));
+	});
+
+	describe('splitKeys', () => {
+		it('should split the keys all to left', () => {
+			const { left, right } = splitKeys([Buffer.from([0]), Buffer.from([1])], 0);
+			expect(left).toHaveLength(3);
+			expect(right).toHaveLength(1);
+		});
 	});
 });

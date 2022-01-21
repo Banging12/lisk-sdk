@@ -24,6 +24,9 @@ import {
 	binaryStringToBuffer,
 	bufferToBinaryString,
 	treeSort,
+	splitKeys,
+	sortKeys,
+	isBitSet,
 } from './utils';
 import { binarySearch } from '../utils';
 import { Branch } from './branch';
@@ -94,82 +97,35 @@ export class SparseMerkleTree {
 		if (key.byteLength !== this.keyLength) {
 			throw new Error(`Key is not equal to defined key length of ${this.keyLength}`);
 		}
-		let rootNode = await this.getNode(this._rootHash);
-		let currentNode = rootNode;
-		const newLeaf = new Leaf(key, value);
-		await this._db.set(newLeaf.hash, newLeaf.data);
-		const binaryKey = binaryExpansion(key, this.keyLength);
-		// if the currentNode is EMPTY node then assign it to leafNode and return
-		if (currentNode instanceof Empty) {
-			rootNode = newLeaf;
-			this._rootHash = rootNode.hash;
+		const root = await this.getNode(this._rootHash);
+		const newRoot = await this._update(key, value, root, 0);
+		this._rootHash = newRoot.hash;
 
-			return rootNode;
+		return newRoot;
+	}
+
+	public async updateBatch(keys: Buffer[], values: Buffer[]): Promise<TreeNode> {
+		if (keys.length !== values.length) {
+			throw new Error('Keys and values must have the same length');
 		}
-		let h = 0;
-		const ancestorNodes: TreeNode[] = [];
-		while (currentNode instanceof Branch) {
-			const d = binaryKey.charAt(h);
-			// Append currentNode to ancestorNodes
-			ancestorNodes.push(currentNode);
-			if (d === '0') {
-				currentNode = await this.getNode(currentNode.leftHash);
-			} else if (d === '1') {
-				currentNode = await this.getNode(currentNode.rightHash);
-			}
-			h += 1;
+		if (keys.length === 0) {
+			return this.getNode(this._rootHash);
+		}
+		if (keys.length === 1) {
+			return this.update(keys[0], values[0]);
 		}
 
-		// The currentNode is an empty node, newLeaf will replace the default empty node or currentNode will be updated to newLeaf
-		let bottomNode: TreeNode = new Empty();
-		if (currentNode instanceof Empty) {
-			// delete the empty node and update the tree, the new leaf will substitute the empty node
-			bottomNode = newLeaf;
-		} else if (currentNode.key === key) {
-			bottomNode = newLeaf;
-		} else {
-			// We need to create new branches in the tree to fulfill the
-			// Condition of one leaf per empty subtree
-			// Note: h is set to the last value from the previous loop
-			const currentNodeBinaryKey = binaryExpansion(currentNode.key, this.keyLength);
-			while (
-				binaryKey.length > h &&
-				currentNodeBinaryKey.length > h &&
-				binaryKey.charAt(h) === currentNodeBinaryKey.charAt(h)
-			) {
-				// Create branch node with empty value
-				const newBranch = new Branch(EMPTY_HASH, EMPTY_HASH);
-				// Append defaultBranch to ancestorNodes
-				ancestorNodes.push(newBranch);
-				h += 1;
-			}
-			// Create last branch node, parent of node and newLeaf
-			const d = binaryKey.charAt(h);
-			if (d === '0') {
-				bottomNode = new Branch(newLeaf.hash, currentNode.hash);
-				await this._db.set(bottomNode.hash, bottomNode.data);
-			} else if (d === '1') {
-				bottomNode = new Branch(currentNode.hash, newLeaf.hash);
-				await this._db.set(bottomNode.hash, bottomNode.data);
-			}
+		if (keys[0].length !== this.keyLength) {
+			throw new Error(`Key is not equal to defined key length of ${this.keyLength}`);
 		}
-		// Finally update all branch nodes in ancestorNodes
-		// Starting from the last
-		while (h > 0) {
-			const p = ancestorNodes[h - 1];
-			const d = binaryKey.charAt(h - 1);
-			if (d === '0') {
-				(p as Branch).update(bottomNode.hash, NodeSide.LEFT);
-			} else if (d === '1') {
-				(p as Branch).update(bottomNode.hash, NodeSide.RIGHT);
-			}
-			await this._db.set(p.hash, (p as Branch).data);
-			bottomNode = p;
-			h -= 1;
-		}
-		this._rootHash = bottomNode.hash;
 
-		return bottomNode;
+		const { keys: sortedKey, values: sortedValue } = sortKeys(keys, values);
+
+		const root = await this.getNode(this._rootHash);
+		const newRoot = await this._updateBatch(sortedKey, sortedValue, root, 0);
+		this._rootHash = newRoot.hash;
+
+		return newRoot;
 	}
 
 	public async remove(key: Buffer): Promise<TreeNode> {
@@ -422,5 +378,133 @@ export class SparseMerkleTree {
 		}
 
 		return { siblingHashes, queries };
+	}
+
+	private async _updateBatch(
+		keys: Buffer[],
+		values: Buffer[],
+		currentNode: TreeNode,
+		height: number,
+	): Promise<TreeNode> {
+		if (keys.length === 0) {
+			return currentNode;
+		}
+		if (keys.length === 1) {
+			return this._update(keys[0], values[0], currentNode, height);
+		}
+
+		const { left: lKeys, right: rKeys } = splitKeys(keys, height);
+		const index = lKeys.length;
+		const lValues = values.slice(0, index);
+		const rValues = values.slice(index);
+
+		let leftNode: TreeNode = new Empty();
+		let rightNode: TreeNode = new Empty();
+		if (currentNode instanceof Leaf) {
+			if (isBitSet(currentNode.key, height)) {
+				rightNode = currentNode;
+			} else {
+				leftNode = currentNode;
+			}
+		}
+		if (currentNode instanceof Branch) {
+			leftNode = await this.getNode(currentNode.leftHash);
+			rightNode = await this.getNode(currentNode.rightHash);
+			await this._db.del(currentNode.hash);
+		}
+
+		let leftNodeHash = leftNode.hash;
+		let rightNodeHash = rightNode.hash;
+		if (lKeys.length > 0 && rKeys.length === 0) {
+			const updated = await this._updateBatch(lKeys, lValues, leftNode, height + 1);
+			leftNodeHash = updated.hash;
+		} else if (rKeys.length > 0 && lKeys.length === 0) {
+			const updated = await this._updateBatch(rKeys, rValues, rightNode, height + 1);
+			rightNodeHash = updated.hash;
+		} else {
+			const [updatedLeft, updatedRight] = await Promise.all([
+				this._updateBatch(lKeys, lValues, leftNode, height + 1),
+				this._updateBatch(rKeys, rValues, rightNode, height + 1),
+			]);
+			leftNodeHash = updatedLeft.hash;
+			rightNodeHash = updatedRight.hash;
+		}
+
+		const nextBranch = new Branch(leftNodeHash, rightNodeHash);
+		await this._db.set(nextBranch.hash, nextBranch.data);
+
+		return nextBranch;
+	}
+
+	private async _update(
+		key: Buffer,
+		value: Buffer,
+		currentNode: TreeNode,
+		height = 0,
+	): Promise<TreeNode> {
+		const newLeaf = new Leaf(key, value);
+		await this._db.set(newLeaf.hash, newLeaf.data);
+		// if the currentNode is EMPTY node then assign it to leafNode and return
+		let result = currentNode;
+		if (result instanceof Empty) {
+			return newLeaf;
+		}
+		let h = height;
+		const ancestorNodes: TreeNode[] = [];
+		while (result instanceof Branch) {
+			// Append currentNode to ancestorNodes
+			ancestorNodes.push(result);
+			if (isBitSet(key, h)) {
+				result = await this.getNode(result.rightHash);
+			} else {
+				result = await this.getNode(result.leftHash);
+			}
+			h += 1;
+		}
+
+		// The currentNode is an empty node, newLeaf will replace the default empty node or currentNode will be updated to newLeaf
+		let bottomNode: TreeNode = new Empty();
+		if (result instanceof Empty) {
+			// delete the empty node and update the tree, the new leaf will substitute the empty node
+			bottomNode = newLeaf;
+		} else if (result.key === key) {
+			bottomNode = newLeaf;
+		} else {
+			// We need to create new branches in the tree to fulfill the
+			// Condition of one leaf per empty subtree
+			// Note: h is set to the last value from the previous loop
+			while (isBitSet(key, h) === isBitSet(result.key, h)) {
+				// Create branch node with empty value
+				const newBranch = new Branch(EMPTY_HASH, EMPTY_HASH);
+				// Append defaultBranch to ancestorNodes
+				ancestorNodes.push(newBranch);
+				h += 1;
+			}
+			// Create last branch node, parent of node and newLeaf
+			if (isBitSet(key, h)) {
+				bottomNode = new Branch(result.hash, newLeaf.hash);
+				await this._db.set(bottomNode.hash, bottomNode.data);
+			} else {
+				bottomNode = new Branch(newLeaf.hash, result.hash);
+				await this._db.set(bottomNode.hash, bottomNode.data);
+			}
+		}
+		// Finally update all branch nodes in ancestorNodes
+		// Starting from the last
+		while (h > height) {
+			const index = ancestorNodes.length - 1;
+			const ancestor = ancestorNodes[index];
+			ancestorNodes.splice(index, 1);
+			await this._db.del(ancestor.hash);
+			if (isBitSet(key, h - 1)) {
+				(ancestor as Branch).update(bottomNode.hash, NodeSide.RIGHT);
+			} else {
+				(ancestor as Branch).update(bottomNode.hash, NodeSide.LEFT);
+			}
+			await this._db.set(ancestor.hash, (ancestor as Branch).data);
+			bottomNode = ancestor;
+			h -= 1;
+		}
+		return bottomNode;
 	}
 }

@@ -35,31 +35,39 @@ describe('SparseMerkleTree', () => {
 			smt = new SparseMerkleTree({ db, keyLength: 32 });
 		});
 
-		for (const test of fixtures.testCases) {
+		for (const test of fixtures.testCases.slice(0, 1)) {
 			// eslint-disable-next-line no-loop-func
 			it(test.description, async () => {
 				const inputKeys = test.input.keys;
 				const inputValues = test.input.values;
 				const outputMerkleRoot = test.output.merkleRoot;
 
-				for (let i = 0; i < inputKeys.length; i += 1) {
-					await smt.update(Buffer.from(inputKeys[i], 'hex'), Buffer.from(inputValues[i], 'hex'));
-				}
+				await smt.updateBatch(
+					inputKeys.map(v => Buffer.from(v, 'hex')),
+					inputValues.map(v => Buffer.from(v, 'hex')),
+				);
+				// for (let i = 0; i < inputKeys.length; i += 1) {
+				// 	await smt.update(Buffer.from(inputKeys[i], 'hex'), Buffer.from(inputValues[i], 'hex'));
+				// }
 
 				expect(smt.rootHash.toString('hex')).toEqual(outputMerkleRoot);
 			});
 		}
 
-		for (const test of SMTFixtures.testCases) {
+		for (const test of SMTFixtures.testCases.slice(0, 1)) {
 			// eslint-disable-next-line no-loop-func
 			it(test.description, async () => {
 				const inputKeys = test.input.keys;
 				const inputValues = test.input.values;
 				const outputMerkleRoot = test.output.merkleRoot;
 
-				for (let i = 0; i < inputKeys.length; i += 1) {
-					await smt.update(Buffer.from(inputKeys[i], 'hex'), Buffer.from(inputValues[i], 'hex'));
-				}
+				await smt.updateBatch(
+					inputKeys.map(v => Buffer.from(v, 'hex')),
+					inputValues.map(v => Buffer.from(v, 'hex')),
+				);
+				// for (let i = 0; i < inputKeys.length; i += 1) {
+				// 	await smt.update(Buffer.from(inputKeys[i], 'hex'), Buffer.from(inputValues[i], 'hex'));
+				// }
 
 				expect(smt.rootHash.toString('hex')).toEqual(outputMerkleRoot);
 			});
@@ -157,7 +165,7 @@ describe('SparseMerkleTree', () => {
 
 	// TODO: Enable or migrate with new testing strategy. This test takes 20min~
 	// eslint-disable-next-line jest/no-disabled-tests
-	describe.skip('generateMultiProof - Jumbo fixtures', () => {
+	describe('generateMultiProof - Jumbo fixtures', () => {
 		let db: Database;
 		let smt: SparseMerkleTree;
 
@@ -176,9 +184,10 @@ describe('SparseMerkleTree', () => {
 				const outputMerkleRoot = test.output.merkleRoot;
 				const outputProof = test.output.proof;
 
-				for (let i = 0; i < inputKeys.length; i += 1) {
-					await smt.update(Buffer.from(inputKeys[i], 'hex'), Buffer.from(inputValues[i], 'hex'));
-				}
+				await smt.updateBatch(
+					inputKeys.map(v => Buffer.from(v, 'hex')),
+					inputValues.map(v => Buffer.from(v, 'hex')),
+				);
 
 				for (const key of removeKeys) {
 					await smt.remove(Buffer.from(key, 'hex'));

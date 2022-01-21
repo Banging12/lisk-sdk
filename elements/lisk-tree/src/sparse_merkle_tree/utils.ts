@@ -277,3 +277,46 @@ export const leafData = (key: Buffer, value: Buffer): Buffer =>
 
 export const branchData = (leftHash: Buffer, rightHash: Buffer): Buffer =>
 	Buffer.concat([BRANCH_HASH_PREFIX, leftHash, rightHash]);
+
+export const isBitSet = (bits: Buffer, i: number): boolean =>
+	// eslint-disable-next-line no-bitwise
+	((bits[Math.floor(i / 8)] << i % 8) & 0x80) === 0x80;
+
+export const splitKeys = (keys: Buffer[], height: number): { left: Buffer[]; right: Buffer[] } => {
+	for (let i = 0; i < keys.length; i += 1) {
+		if (isBitSet(keys[i], height)) {
+			return {
+				left: keys.slice(0, i),
+				right: keys.slice(i),
+			};
+		}
+	}
+	return {
+		left: keys,
+		right: [],
+	};
+};
+
+export const sortKeys = (
+	keys: Buffer[],
+	values: Buffer[],
+): { keys: Buffer[]; values: Buffer[] } => {
+	const kv = [];
+	for (let i = 0; i < keys.length; i += 1) {
+		kv.push({
+			key: keys[i],
+			value: values[i],
+		});
+	}
+	kv.sort((a, b) => a.key.compare(b.key));
+	const sortedKey = [];
+	const sortedValue = [];
+	for (let i = 0; i < kv.length; i += 1) {
+		sortedKey[i] = kv[i].key;
+		sortedValue[i] = kv[i].value;
+	}
+	return {
+		keys: sortedKey,
+		values: sortedValue,
+	};
+};

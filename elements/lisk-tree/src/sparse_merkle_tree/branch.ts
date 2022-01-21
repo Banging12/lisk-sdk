@@ -16,6 +16,11 @@ import { hash } from '@liskhq/lisk-cryptography';
 import { branchData } from './utils';
 import { NodeSide } from './constants';
 
+// eslint-disable-next-line import/no-mutable-exports
+let hashCount = 0;
+
+export { hashCount };
+
 export class Branch {
 	private _leftHash: Buffer;
 	private _rightHash: Buffer;
@@ -27,6 +32,7 @@ export class Branch {
 		this._rightHash = rightHash;
 		this._data = branchData(this._leftHash, this._rightHash);
 		this._hash = hash(this._data);
+		hashCount += 1;
 	}
 
 	public get hash() {
@@ -49,6 +55,7 @@ export class Branch {
 			this._rightHash = newChild;
 		}
 		this._data = branchData(this.leftHash, this.rightHash);
+		hashCount += 1;
 		this._hash = hash(this.data);
 	}
 }
