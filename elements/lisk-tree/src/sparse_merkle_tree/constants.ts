@@ -22,6 +22,8 @@ export const BRANCH_HASH_PREFIX = Buffer.from('01', 'hex');
 export const NODE_HASH_SIZE = 32;
 export const DEFAULT_KEY_LENGTH = 38; // (moduleID (4) + prefix (2) + key (32))
 
+export const BATCH_HEIGHT = 4;
+
 export const enum NodeSide {
 	LEFT = 0,
 	RIGHT = 1,

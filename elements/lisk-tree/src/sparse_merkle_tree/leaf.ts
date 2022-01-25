@@ -28,6 +28,13 @@ export class Leaf {
 		this._hash = hash(this._data);
 	}
 
+	public static fromLeafData(data: Buffer): Leaf {
+		const leaf = new Leaf(Buffer.alloc(0), Buffer.alloc(0));
+		leaf._data = data;
+		leaf._hash = hash(leaf._data);
+		return leaf;
+	}
+
 	public get hash() {
 		return this._hash;
 	}

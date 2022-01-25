@@ -100,25 +100,25 @@ const measureHash = iteration => {
 };
 
 (async () => {
-	measureHash(20000);
+	// measureHash(20000);
 	console.log('iteration', 100);
-	await measure(10000);
-	await measureBatch(10000);
+	// await measure(100);
+	await measureBatch(100);
 	total += 100;
 	console.log('total', total);
 
 	console.log('iteration', 1000);
-	await measure(1000);
+	// await measure(1000);
 	await measureBatch(1000);
 	total += 1000;
 	console.log('total', total);
 	// 10,000,000
 
 	for (let i = 0; i < 1000; i++) {
-		console.log('v'.repeat(100));
-		console.log('iteration update', 10000);
-		await measure(10000);
-		console.log('^'.repeat(100));
+		// console.log('v'.repeat(100));
+		// console.log('iteration update', 10000);
+		// await measure(10000);
+		// console.log('^'.repeat(100));
 		console.log('v'.repeat(100));
 		console.log('iteration batch update', 10000);
 		await measureBatch(10000);
@@ -130,7 +130,7 @@ const measureHash = iteration => {
 	for (let i = 0; i < 10; i++) {
 		console.log('vvvv iteration', 5000);
 		await measure(5000);
-		await measureBatch(5000);
+		// await measureBatch(5000);
 		total += 5000;
 		console.log('^^^^ total', total);
 	}
