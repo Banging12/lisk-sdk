@@ -21,18 +21,17 @@ export class Leaf {
 	private _hash: Buffer;
 	private _data: Buffer;
 
-	public constructor(key: Buffer, value: Buffer) {
+	public constructor(key: Buffer, value: Buffer, nodeHash: Buffer) {
 		this._key = key;
 		this._value = value;
 		this._data = leafData(this._key, this._value);
-		this._hash = hash(this._data);
+		this._hash = nodeHash;
 	}
 
-	public static fromLeafData(data: Buffer): Leaf {
-		const leaf = new Leaf(Buffer.alloc(0), Buffer.alloc(0));
-		leaf._data = data;
-		leaf._hash = hash(leaf._data);
-		return leaf;
+	public static fromData(key: Buffer, value: Buffer): Leaf {
+		const data = leafData(key, value);
+		const nodeHash = hash(data);
+		return new Leaf(key, value, nodeHash);
 	}
 
 	public get hash() {

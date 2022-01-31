@@ -33,8 +33,11 @@ const measure = async (iteration, keep) => {
 	console.time('smt');
 	console.time('smt-update');
 	for (const data of kvdata) {
-		// await smt.update(Buffer.concat([data.key.slice(1, 7), hash(data.key.slice(7))]), hash(data.value))
-		await smt.update(getRandomBytes(38), getRandomBytes(32));
+		await smt.update(
+			Buffer.concat([data.key.slice(1, 7), hash(data.key.slice(7))]),
+			hash(data.value),
+		);
+		// await smt.update(getRandomBytes(38), getRandomBytes(32));
 	}
 	console.timeEnd('smt-update');
 	console.time('smt-save');
@@ -84,6 +87,7 @@ const measureBatch = async (iteration, keep) => {
 	console.timeEnd('smt-save-batch');
 	console.timeEnd('smt-batch');
 	console.log(smt.rootHash.toString('hex'));
+	console.log('count', smt.counter);
 };
 
 const measureHash = iteration => {
@@ -100,7 +104,19 @@ const measureHash = iteration => {
 };
 
 (async () => {
-	// measureHash(20000);
+	// measure db
+	const keys = [];
+	for (let i = 0; i < 10000; i++) {
+		const k = { key: getRandomBytes(38), value: getRandomBytes(32) };
+		keys.push(k);
+		await db.put(k.key, k.value);
+	}
+	console.time('db');
+	for (const k of keys) {
+		await db.get(k.key);
+	}
+	console.timeEnd('db');
+	measureHash(20000);
 	console.log('iteration', 100);
 	// await measure(100);
 	await measureBatch(100);
@@ -129,8 +145,8 @@ const measureHash = iteration => {
 
 	for (let i = 0; i < 10; i++) {
 		console.log('vvvv iteration', 5000);
-		await measure(5000);
-		// await measureBatch(5000);
+		// await measure(5000);
+		await measureBatch(5000);
 		total += 5000;
 		console.log('^^^^ total', total);
 	}

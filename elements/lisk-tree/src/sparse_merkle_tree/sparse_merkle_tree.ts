@@ -49,6 +49,7 @@ type QueryWithHeight = {
 };
 
 export class SparseMerkleTree {
+	public counter = 0;
 	private readonly _db: Database;
 	private readonly _keyLength: number;
 	private _rootHash: Buffer;
@@ -81,12 +82,12 @@ export class SparseMerkleTree {
 		if (isLeaf(data)) {
 			const { key, value } = parseLeafData(data, this.keyLength);
 
-			return new Leaf(key, value);
+			return new Leaf(key, value, nodeHash);
 		}
 
 		const { leftHash, rightHash } = parseBranchData(data);
 
-		return new Branch(leftHash, rightHash);
+		return new Branch(leftHash, rightHash, nodeHash);
 	}
 	// As specified in from https://github.com/LiskHQ/lips/blob/master/proposals/lip-0039.md
 	public async update(key: Buffer, value: Buffer): Promise<TreeNode> {
@@ -430,7 +431,8 @@ export class SparseMerkleTree {
 			rightNodeHash = updatedRight.hash;
 		}
 
-		const nextBranch = new Branch(leftNodeHash, rightNodeHash);
+		const nextBranch = Branch.fromData(leftNodeHash, rightNodeHash);
+		this.counter += 1;
 		await this._db.set(nextBranch.hash, nextBranch.data);
 
 		return nextBranch;
@@ -442,7 +444,8 @@ export class SparseMerkleTree {
 		currentNode: TreeNode,
 		height = 0,
 	): Promise<TreeNode> {
-		const newLeaf = new Leaf(key, value);
+		const newLeaf = Leaf.fromData(key, value);
+		this.counter += 1;
 		await this._db.set(newLeaf.hash, newLeaf.data);
 		// if the currentNode is EMPTY node then assign it to leafNode and return
 		let result = currentNode;
@@ -467,7 +470,7 @@ export class SparseMerkleTree {
 		if (result instanceof Empty) {
 			// delete the empty node and update the tree, the new leaf will substitute the empty node
 			bottomNode = newLeaf;
-		} else if (result.key === key) {
+		} else if (result.key.equals(key)) {
 			bottomNode = newLeaf;
 		} else {
 			// We need to create new branches in the tree to fulfill the
@@ -475,17 +478,20 @@ export class SparseMerkleTree {
 			// Note: h is set to the last value from the previous loop
 			while (isBitSet(key, h) === isBitSet(result.key, h)) {
 				// Create branch node with empty value
-				const newBranch = new Branch(EMPTY_HASH, EMPTY_HASH);
+				const newBranch = Branch.fromData(EMPTY_HASH, EMPTY_HASH);
+				this.counter += 1;
 				// Append defaultBranch to ancestorNodes
 				ancestorNodes.push(newBranch);
 				h += 1;
 			}
 			// Create last branch node, parent of node and newLeaf
 			if (isBitSet(key, h)) {
-				bottomNode = new Branch(result.hash, newLeaf.hash);
+				bottomNode = Branch.fromData(result.hash, newLeaf.hash);
+				this.counter += 1;
 				await this._db.set(bottomNode.hash, bottomNode.data);
 			} else {
-				bottomNode = new Branch(newLeaf.hash, result.hash);
+				bottomNode = Branch.fromData(newLeaf.hash, result.hash);
+				this.counter += 1;
 				await this._db.set(bottomNode.hash, bottomNode.data);
 			}
 		}

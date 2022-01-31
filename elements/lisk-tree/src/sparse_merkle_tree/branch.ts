@@ -22,17 +22,17 @@ export class Branch {
 	private _hash: Buffer;
 	private _data: Buffer;
 
-	public constructor(leftHash: Buffer, rightHash: Buffer) {
+	public constructor(leftHash: Buffer, rightHash: Buffer, nodeHash: Buffer) {
 		this._leftHash = leftHash;
 		this._rightHash = rightHash;
 		this._data = branchData(this._leftHash, this._rightHash);
-		this._hash = hash(this._data);
+		this._hash = nodeHash;
 	}
 
-	public static fromHash(data: Buffer): Branch {
-		const branch = new Branch(Buffer.alloc(0), Buffer.alloc(0));
-		branch._hash = data;
-		return branch;
+	public static fromData(leftHash: Buffer, rightHash: Buffer): Branch {
+		const data = branchData(leftHash, rightHash);
+		const nodeHash = hash(data);
+		return new Branch(leftHash, rightHash, nodeHash);
 	}
 
 	public get hash() {
