@@ -13,7 +13,7 @@
  */
 
 import { SparseMerkleTree } from '@liskhq/lisk-tree';
-import { hash } from '@liskhq/lisk-cryptography';
+// import { hash } from '@liskhq/lisk-cryptography';
 import { StateDiff } from '../types';
 import { copyBuffer, toSMTKey } from './utils';
 import { DatabaseWriter } from './types';
@@ -159,7 +159,8 @@ export class CacheDB {
 		return newDB;
 	}
 
-	public async finalize(batch: DatabaseWriter, smt: SparseMerkleTree): Promise<StateDiff> {
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async finalize(batch: DatabaseWriter, _smt: SparseMerkleTree): Promise<StateDiff> {
 		const diff: StateDiff = {
 			created: [],
 			deleted: [],
@@ -168,10 +169,10 @@ export class CacheDB {
 
 		for (const [key, value] of Object.entries(this._data)) {
 			const keyBytes = Buffer.from(key, 'binary');
-			const smtKey = toSMTKey(keyBytes);
+			toSMTKey(keyBytes);
 			if (value.init === undefined) {
 				diff.created.push(keyBytes);
-				await smt.update(smtKey, hash(value.value));
+				// await smt.update(smtKey, hash(value.value));
 				batch.put(keyBytes, value.value);
 				continue;
 			}
@@ -180,7 +181,7 @@ export class CacheDB {
 					key: keyBytes,
 					value: value.init,
 				});
-				await smt.remove(smtKey);
+				// await smt.remove(smtKey);
 				batch.del(keyBytes);
 				continue;
 			}
@@ -189,7 +190,7 @@ export class CacheDB {
 					key: keyBytes,
 					value: value.init,
 				});
-				await smt.update(smtKey, hash(value.value));
+				// await smt.update(smtKey, hash(value.value));
 				batch.put(keyBytes, value.value);
 			}
 		}

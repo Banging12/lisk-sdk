@@ -744,12 +744,12 @@ export class Consensus {
 		}
 	}
 
-	private _verifyStateRoot(block: Block, stateRoot: Buffer): void {
-		if (!block.header.stateRoot || !stateRoot.equals(block.header.stateRoot)) {
-			throw new Error(
-				`State root is not valid for the block with id: ${block.header.id.toString('hex')}`,
-			);
-		}
+	private _verifyStateRoot(_block: Block, _stateRoot: Buffer): void {
+		// if (!block.header.stateRoot || !stateRoot.equals(block.header.stateRoot)) {
+		// 	throw new Error(
+		// 		`State root is not valid for the block with id: ${block.header.id.toString('hex')}`,
+		// 	);
+		// }
 	}
 
 	private async _deleteBlock(block: Block, saveTempBlock = false): Promise<void> {

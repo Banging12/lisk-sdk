@@ -28,6 +28,7 @@ import {
 	getAddressFromPublicKey,
 	getPrivateAndPublicKeyFromPassphrase,
 	getPublicKeyFromPrivateKey,
+	hash,
 	parseEncryptedPassphrase,
 } from '@liskhq/lisk-cryptography';
 import { InMemoryKVStore, KVStore } from '@liskhq/lisk-db';
@@ -339,7 +340,7 @@ export class Generator {
 
 		const apiContext = createAPIContext({ stateStore, eventQueue });
 		const bftParams = await this._bftAPI.getBFTParameters(apiContext, height + 1);
-		header.stateRoot = smt.rootHash;
+		header.stateRoot = hash(Buffer.alloc(0));
 		header.validatorsHash = bftParams.validatorsHash;
 
 		return new Block(header, [], assets);

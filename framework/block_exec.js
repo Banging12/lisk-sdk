@@ -34,7 +34,7 @@ const genesis = {
 const createTransferTransaction = input => {
 	const encodedParams = codec.encode(transferParamsSchema, {
 		recipientAddress: input.recipientAddress,
-		amount: input.amount ?? BigInt('10000000000'),
+		amount: input.amount || BigInt('10000000000'),
 		data: '',
 	});
 	const { publicKey } = getAddressAndPublicKeyFromPassphrase(input.passphrase);
@@ -44,7 +44,7 @@ const createTransferTransaction = input => {
 		commandID: 0,
 		nonce: input.nonce,
 		senderPublicKey: publicKey,
-		fee: input.fee ?? BigInt('200000'),
+		fee: input.fee || BigInt('200000'),
 		params: encodedParams,
 		signatures: [],
 	});
@@ -71,7 +71,7 @@ const createDelegateRegisterTransaction = input => {
 		commandID: 0,
 		nonce: input.nonce,
 		senderPublicKey: publicKey,
-		fee: input.fee ?? BigInt('2500000000'),
+		fee: input.fee || BigInt('2500000000'),
 		params: encodedAsset,
 		signatures: [],
 	});
@@ -92,7 +92,7 @@ const createDelegateVoteTransaction = input => {
 		commandID: 1,
 		nonce: input.nonce,
 		senderPublicKey: publicKey,
-		fee: input.fee ?? BigInt('100000000'),
+		fee: input.fee || BigInt('100000000'),
 		params: encodedAsset,
 		signatures: [],
 	});
@@ -130,7 +130,7 @@ const createMultiSignRegisterTransaction = input => {
 			commandID: 0,
 			nonce: input.nonce,
 			senderPublicKey: publicKey,
-			fee: input.fee ?? BigInt('1100000000'),
+			fee: input.fee || BigInt('1100000000'),
 			params,
 			signatures: [],
 		},
@@ -200,7 +200,7 @@ const size = 500;
 		);
 	}
 	// wait till CPU settles
-	await wait(1000);
+	await wait(10000);
 	console.log('Executing transfer transaction blocks');
 	const maxTransferSize = 100;
 	for (i = 0; i < size; i += maxTransferSize) {
@@ -223,7 +223,7 @@ const size = 500;
 			}),
 		);
 	}
-	await wait(1000);
+	await wait(10000);
 	console.log('Executing delegate registrations transaction blocks');
 	const maxRegSize = 50;
 	for (i = 0; i < size; i += maxRegSize) {
@@ -249,7 +249,7 @@ const size = 500;
 			}),
 		);
 	}
-	await wait(1000);
+	await wait(10000);
 	console.log('Executing vote transaction blocks');
 	const maxVoteSize = 35;
 	for (i = 0; i < size; i += maxVoteSize) {
@@ -282,7 +282,7 @@ const size = 500;
 			}),
 		);
 	}
-	await wait(1000);
+	await wait(10000);
 	console.log('Executing multisig registrations transaction blocks');
 	const maxMulRegSize = 2;
 	for (i = 0; i < size; i += maxMulRegSize) {
