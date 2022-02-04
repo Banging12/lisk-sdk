@@ -502,8 +502,12 @@ export class Consensus {
 			assets: block.assets,
 			transactions: block.transactions,
 		});
+		console.time('verify')
 		await this._verify(block);
+		console.timeEnd('verify')
+		console.time('verifyAssets')
 		await this._stateMachine.verifyAssets(ctx);
+		console.timeEnd('verifyAssets')
 
 		if (!options.skipBroadcast) {
 			this._network.send({ event: NETWORK_EVENT_POST_BLOCK, data: block });
@@ -511,8 +515,11 @@ export class Consensus {
 				block,
 			});
 		}
+		console.time('executeBlock')
 		await this._stateMachine.executeBlock(ctx);
+		console.timeEnd('executeBlock')
 
+		console.time('verifyResult')
 		const bftVotes = await this._bftAPI.getBFTHeights(apiContext);
 
 		let { finalizedHeight } = this._chain;
@@ -534,10 +541,13 @@ export class Consensus {
 			this._chain.lastBlock.header.stateRoot,
 		);
 		this._verifyStateRoot(block, currentState.smt.rootHash);
+		console.timeEnd('verifyResult')
 
+		console.time('saveBlock')
 		await this._chain.saveBlock(block, currentState, finalizedHeight, {
 			removeFromTempTable: options.removeFromTempTable ?? false,
 		});
+		console.timeEnd('saveBlock')
 
 		const isFinalizedHeightChanged = !!finalizedHeightChangeRange;
 		if (isFinalizedHeightChanged) {
