@@ -167,7 +167,7 @@ const getAccounts = (accounts, offset, count) => {
 
 const wait = time => new Promise(resolve => setTimeout(resolve, time));
 
-const size = 500;
+const size = 5000;
 
 (async () => {
 	console.log('Creating accounts');
