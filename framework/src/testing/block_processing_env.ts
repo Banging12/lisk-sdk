@@ -53,6 +53,7 @@ interface BlockProcessingParams {
 }
 
 export interface BlockProcessingEnv {
+	accounts: { passphrase: string }[];
 	createBlock: (transactions?: Transaction[], timestamp?: number) => Promise<Block>;
 	getConsensus: () => Consensus;
 	getGenerator: () => Generator;
@@ -98,6 +99,7 @@ const getNextTimestamp = async (node: Node, apiContext: APIContext, previousBloc
 const createProcessableBlock = async (
 	node: Node,
 	transactions: Transaction[],
+	newAccounts: { passphrase: string }[],
 	timestamp?: number,
 ): Promise<Block> => {
 	// Get previous block and generate valid timestamp, seed reveal, maxHeightPrevoted, reward and maxHeightPreviouslyForged
@@ -106,7 +108,7 @@ const createProcessableBlock = async (
 	const nextTimestamp =
 		timestamp ?? (await getNextTimestamp(node, apiContext, previousBlockHeader));
 	const validator = await node.validatorAPI.getGeneratorAtTimestamp(apiContext, nextTimestamp);
-	const passphrase = getPassphraseFromDefaultConfig(validator);
+	const passphrase = getPassphraseFromDefaultConfig(validator, newAccounts);
 	for (const tx of transactions) {
 		await node['_generator']['_pool'].add(tx);
 	}
@@ -157,7 +159,7 @@ export const getBlockProcessingEnv = async (
 		data: codec.fromJSON<Record<string, unknown>>(asset.schema, asset.data),
 	}));
 	const genesisBlock = await node.generateGenesisBlock({
-		timestamp: Math.floor(Date.now() / 1000) - 60 * 60,
+		timestamp: Math.floor(Date.now() / 1000) - 1000 * 60,
 		assets: blockAssets,
 	});
 	await node.init({
@@ -174,9 +176,11 @@ export const getBlockProcessingEnv = async (
 		appConfig.genesis.communityIdentifier,
 	);
 
+	const accounts: { passphrase: string }[] = [];
 	return {
+		accounts,
 		createBlock: async (transactions: Transaction[] = [], timestamp?: number): Promise<Block> =>
-			createProcessableBlock(node, transactions, timestamp),
+			createProcessableBlock(node, transactions, accounts, timestamp),
 		getGenesisBlock: () => genesisBlock,
 		getChain: () => node['_chain'],
 		getConsensus: () => node['_consensus'],
@@ -188,7 +192,7 @@ export const getBlockProcessingEnv = async (
 		process: async (block): Promise<void> => node['_consensus']['_execute'](block, 'peer-id'),
 		processUntilHeight: async (height): Promise<void> => {
 			while (node['_chain'].lastBlock.header.height < height) {
-				const nextBlock = await createProcessableBlock(node, []);
+				const nextBlock = await createProcessableBlock(node, [], accounts);
 				await node['_consensus'].execute(nextBlock);
 			}
 		},
@@ -197,7 +201,7 @@ export const getBlockProcessingEnv = async (
 			const apiContext = createNewAPIContext(blockchainDB);
 			const nextTimestamp = await getNextTimestamp(node, apiContext, previousBlockHeader);
 			const validator = await node.validatorAPI.getGeneratorAtTimestamp(apiContext, nextTimestamp);
-			const passphrase = getPassphraseFromDefaultConfig(validator);
+			const passphrase = getPassphraseFromDefaultConfig(validator, accounts);
 
 			return passphrase;
 		},

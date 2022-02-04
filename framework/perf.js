@@ -471,6 +471,15 @@ const createFullBlock = () => {
 			});
 		}
 		console.timeEnd('calculateMerkleRoot');
+		console.time('calculateMerkleRoot');
+		for (let i = 0; i < 10000; i += 1) {
+			result = regularMerkleTree.calculateMerkleRoot({
+				value: getRandomBytes(32),
+				appendPath: result.appendPath,
+				size: result.size,
+			});
+		}
+		console.timeEnd('calculateMerkleRoot');
 	}
 	// calculateRootFromRightWitness
 	{

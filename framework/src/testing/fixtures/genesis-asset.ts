@@ -23,7 +23,7 @@ export const blockAssetsJSON = [
 						chainID: 0,
 						localID: 0,
 					},
-					availableBalance: '10000000000000',
+					availableBalance: '1000000000000000',
 					lockedBalances: [],
 				},
 				{
@@ -842,7 +842,7 @@ export const blockAssetsJSON = [
 						chainID: 0,
 						localID: 0,
 					},
-					availableBalance: '10000000000000',
+					availableBalance: '100000000000000000',
 					lockedBalances: [],
 				},
 				{

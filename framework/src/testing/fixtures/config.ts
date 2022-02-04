@@ -12,7 +12,11 @@
  * Removal or modification of this copyright notice is prohibited.
  *
  */
-import { decryptPassphraseWithPassword, parseEncryptedPassphrase } from '@liskhq/lisk-cryptography';
+import {
+	decryptPassphraseWithPassword,
+	getAddressFromPassphrase,
+	parseEncryptedPassphrase,
+} from '@liskhq/lisk-cryptography';
 
 export const defaultPassword =
 	'tiger grit rigid pipe athlete cheese guitar hurdle remind gap peasant pond';
@@ -2608,17 +2612,24 @@ const getDelegateFromDefaultConfig = (address: Buffer) => {
 	const delegateConfig = defaultConfig.generation.delegates.find(d =>
 		address.equals(Buffer.from(d.address, 'hex')),
 	);
+	return delegateConfig;
+};
+
+export const getPassphraseFromDefaultConfig = (
+	address: Buffer,
+	accounts: { passphrase: string }[],
+): string => {
+	const delegateConfig = getDelegateFromDefaultConfig(address);
 	if (!delegateConfig) {
+		for (const acc of accounts) {
+			if (address.equals(getAddressFromPassphrase(acc.passphrase))) {
+				return acc.passphrase;
+			}
+		}
 		throw new Error(
 			`Delegate with address: ${address.toString('hex')} does not exists in default config`,
 		);
 	}
-
-	return delegateConfig;
-};
-
-export const getPassphraseFromDefaultConfig = (address: Buffer): string => {
-	const delegateConfig = getDelegateFromDefaultConfig(address);
 	const encryptedPassphraseObject = parseEncryptedPassphrase(delegateConfig.encryptedPassphrase);
 	const passphrase = decryptPassphraseWithPassword(encryptedPassphraseObject, defaultPassword);
 

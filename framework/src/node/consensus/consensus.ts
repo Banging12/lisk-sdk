@@ -446,7 +446,7 @@ export class Consensus {
 					block,
 				});
 
-				block.validate();
+				this._chain.validateBlock(block);
 				const previousLastBlock = objects.cloneDeep(lastBlock);
 				await this._deleteBlock(lastBlock);
 				try {
@@ -471,7 +471,7 @@ export class Consensus {
 				{ id: block.header.id, height: block.header.height },
 				'Processing valid block',
 			);
-			block.validate();
+			this._chain.validateBlock(block);
 			await this._executeValidated(block);
 
 			this._network.applyNodeInfo({

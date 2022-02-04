@@ -24,7 +24,11 @@ import {
 	STORE_PREFIX_BFT_VOTES,
 } from './constants';
 import { bftModuleConfig, BFTVotes, bftVotesSchema } from './schemas';
-import { BlockAfterExecuteContext, GenesisBlockExecuteContext } from '../../node/state_machine';
+import {
+	BlockAfterExecuteContext,
+	BlockExecuteContext,
+	GenesisBlockExecuteContext,
+} from '../../node/state_machine';
 import { ValidatorsAPI } from './types';
 import {
 	insertBlockBFTInfo,
@@ -76,13 +80,19 @@ export class BFTModule extends BaseModule {
 		);
 	}
 
+	public async beforeTransactionsExecute(context: BlockExecuteContext): Promise<void> {
+		const votesStore = context.getStore(this.id, STORE_PREFIX_BFT_VOTES);
+		const bftVotes = await votesStore.getWithSchema<BFTVotes>(EMPTY_KEY, bftVotesSchema);
+		insertBlockBFTInfo(bftVotes, context.header, this._maxLengthBlockBFTInfos);
+		await votesStore.setWithSchema(EMPTY_KEY, bftVotes, bftVotesSchema);
+	}
+
 	public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise<void> {
 		const votesStore = context.getStore(this.id, STORE_PREFIX_BFT_VOTES);
 		const paramsStore = context.getStore(this.id, STORE_PREFIX_BFT_PARAMETERS);
 		const paramsCache = new BFTParametersCache(paramsStore);
 		const bftVotes = await votesStore.getWithSchema<BFTVotes>(EMPTY_KEY, bftVotesSchema);
 
-		insertBlockBFTInfo(bftVotes, context.header, this._maxLengthBlockBFTInfos);
 		await paramsCache.cache(
 			bftVotes.blockBFTInfos[bftVotes.blockBFTInfos.length - 1].height,
 			bftVotes.blockBFTInfos[0].height,

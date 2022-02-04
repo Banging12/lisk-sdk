@@ -12,7 +12,7 @@
  * Removal or modification of this copyright notice is prohibited.
  */
 
-import { hashOnion, generateHashOnionSeed } from '@liskhq/lisk-cryptography';
+import { hashOnion, generateHashOnionSeed, hash, getRandomBytes } from '@liskhq/lisk-cryptography';
 import { codec } from '@liskhq/lisk-codec';
 import { dataStructures, objects } from '@liskhq/lisk-utils';
 import { LiskValidationError, validator } from '@liskhq/lisk-validator';
@@ -256,6 +256,12 @@ export class RandomModule extends BaseModule {
 			return prev;
 		}, undefined);
 		const hashOnionConfig = this._getHashOnionConfig(address);
+		if (!hashOnionConfig) {
+			return {
+				hash: generateHashOnionSeed(),
+				count: 0,
+			};
+		}
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		if (!usedHashOnion) {
 			return {
@@ -288,10 +294,10 @@ export class RandomModule extends BaseModule {
 		};
 	}
 
-	private _getHashOnionConfig(address: Buffer): HashOnionConfig {
+	private _getHashOnionConfig(address: Buffer): HashOnionConfig | undefined {
 		const hashOnionConfig = this._generatorConfig.find(d => d.address.equals(address));
 		if (!hashOnionConfig?.hashOnion) {
-			throw new Error(`Account ${address.toString('hex')} does not have hash onion in the config`);
+			return undefined;
 		}
 
 		return hashOnionConfig.hashOnion;
