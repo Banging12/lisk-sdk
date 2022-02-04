@@ -12,7 +12,7 @@
  * Removal or modification of this copyright notice is prohibited.
  */
 
-import { hashOnion, generateHashOnionSeed, hash, getRandomBytes } from '@liskhq/lisk-cryptography';
+import { hashOnion, generateHashOnionSeed } from '@liskhq/lisk-cryptography';
 import { codec } from '@liskhq/lisk-codec';
 import { dataStructures, objects } from '@liskhq/lisk-utils';
 import { LiskValidationError, validator } from '@liskhq/lisk-validator';
