@@ -202,7 +202,11 @@ export class StateMachine {
 	}
 
 	public async executeBlock(ctx: BlockContext): Promise<void> {
+		console.log('v'.repeat(100));
+		console.time('beforeExecuteBlock');
 		await this.beforeExecuteBlock(ctx);
+		console.timeEnd('beforeExecuteBlock');
+		console.time('executeTransactions');
 		for (const tx of ctx.transactions) {
 			const txContext = ctx.getTransactionContext(tx);
 			const verifyResult = await this.verifyTransaction(txContext);
@@ -214,7 +218,11 @@ export class StateMachine {
 			}
 			await this.executeTransaction(txContext);
 		}
+		console.timeEnd('executeTransactions');
+		console.time('afterExecuteBlock');
 		await this.afterExecuteBlock(ctx);
+		console.timeEnd('afterExecuteBlock');
+		console.log('^'.repeat(100));
 	}
 
 	private _findModule(id: number): StateMachineModule | undefined {
