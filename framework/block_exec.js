@@ -291,4 +291,115 @@ const size = 5000;
 		console.log('processed', block.transactions.length);
 	}
 	console.log('Current height', env.getLastBlock().header.height);
+
+	console.log('*'.repeat(100));
+	// repeat the same
+	console.log('Creating accounts');
+	const newAccounts = [];
+	for (let i = 0; i < size; i += 1) {
+		newAccounts.push(createAccount());
+	}
+
+	console.log('Creating transactions');
+	// create 5000 accounts
+	const transfers2 = [];
+	const authData2 = await env.invoke('auth_getAuthAccount', {
+		address: genesis.address.toString('hex'),
+	});
+	for (let i = 0; i < size; i += 1) {
+		transfers2.push(
+			createTransferTransaction({
+				nonce: BigInt(authData2.nonce) + BigInt(i),
+				recipientAddress: newAccounts[i].address,
+				amount: BigInt('1500000000000'),
+				networkIdentifier: env.getNetworkId(),
+				passphrase: genesis.passphrase,
+			}),
+		);
+	}
+	// wait till CPU settles
+	await wait(10000);
+	console.log('Executing transfer transaction blocks');
+	for (i = 0; i < size; i += maxTransferSize) {
+		const block = await env.createBlock(transfers2.slice(i, i + maxTransferSize));
+		await env.process(block);
+		console.log('processed', block.transactions.length);
+	}
+	console.log('Current height', env.getLastBlock().header.height);
+
+	console.log('Creating transactions');
+	// register 5000 delegates
+	const delegateRegs2 = [];
+	for (let i = 0; i < size; i += 1) {
+		delegateRegs2.push(
+			createDelegateRegisterTransaction({
+				nonce: BigInt(0),
+				username: `r2_${i}`,
+				networkIdentifier: env.getNetworkId(),
+				passphrase: newAccounts[i].passphrase,
+			}),
+		);
+	}
+	await wait(10000);
+	console.log('Executing delegate registrations transaction blocks');
+	for (i = 0; i < size; i += maxRegSize) {
+		const block = await env.createBlock(delegateRegs2.slice(i, i + maxRegSize));
+		await env.process(block);
+		console.log('processed', block.transactions.length);
+	}
+	console.log('Current height', env.getLastBlock().header.height);
+
+	console.log('Creating transactions');
+	// votes delegates
+	const votes2 = [];
+	for (let i = 0; i < size; i += 1) {
+		votes2.push(
+			createDelegateVoteTransaction({
+				nonce: BigInt(1),
+				networkIdentifier: env.getNetworkId(),
+				passphrase: newAccounts[i].passphrase,
+				votes: getAccounts(newAccounts, i, 10).map(a => ({
+					delegateAddress: a.address,
+					amount: BigInt('100000000000'),
+				})),
+			}),
+		);
+	}
+	await wait(10000);
+	console.log('Executing vote transaction blocks');
+	for (i = 0; i < size; i += maxVoteSize) {
+		const block = await env.createBlock(votes2.slice(i, i + maxVoteSize));
+		await env.process(block);
+		console.log('processed', block.transactions.length);
+	}
+	console.log('Current height', env.getLastBlock().header.height);
+
+	console.log('Creating transactions');
+	// register 5000 delegates
+	const regMultiSig2 = [];
+	for (let i = 0; i < size; i += 1) {
+		const party = getAccounts(newAccounts, i, 64);
+		const keys = party.map(a => a.publicKey);
+		keys.sort((p1, p2) => p1.compare(p2));
+		regMultiSig2.push(
+			createMultiSignRegisterTransaction({
+				nonce: BigInt(2),
+				fee: BigInt('110000000'),
+				mandatoryKeys: keys,
+				optionalKeys: [],
+				numberOfSignatures: 64,
+				networkIdentifier: env.getNetworkId(),
+				senderPassphrase: party[0].passphrase,
+				passphrases: [party[0].passphrase, ...party.map(p => p.passphrase)],
+			}),
+		);
+	}
+	await wait(10000);
+	console.log('Executing multisig registrations transaction blocks');
+	for (i = 0; i < size; i += maxMulRegSize) {
+		const block = await env.createBlock(regMultiSig2.slice(i, i + maxMulRegSize));
+		await env.process(block);
+		console.log('processed', block.transactions.length);
+	}
+	console.log('Current height', env.getLastBlock().header.height);
 })();
