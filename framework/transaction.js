@@ -212,6 +212,26 @@ const size = 5000;
 		applyTransactions: async transactions => verifyTx(transactions),
 	});
 
+	const trans = [];
+	for (let i = 0; i < size; i += 1) {
+		trans.push(
+			createTransferTransaction({
+				nonce: 0n,
+				recipientAddress: accounts[i].address,
+				amount: BigInt('100000000'),
+				networkIdentifier: env.getNetworkId(),
+				passphrase: accounts[i].passphrase,
+			}),
+		);
+	}
+	// wait till CPU settles
+	await wait(10000);
+	console.time('trans');
+	for (const tx of trans) {
+		await pool.add(tx);
+	}
+	console.timeEnd('trans');
+
 	console.log('Creating transactions');
 	// register 5000 delegates
 	const delegateRegs = [];

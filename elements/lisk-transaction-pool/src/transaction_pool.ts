@@ -214,6 +214,7 @@ export class TransactionPool {
 		// _applyFunction is injected from chain module applyTransaction
 		let txStatus;
 		try {
+			console.time('verify')
 			await this._applyFunction([incomingTx]);
 			txStatus = TransactionStatus.PROCESSABLE;
 		} catch (err) {
@@ -225,6 +226,8 @@ export class TransactionPool {
 					error: err as Error,
 				};
 			}
+		} finally {
+			console.timeEnd('verify')
 		}
 		/*
 			Evict transactions if pool is full
