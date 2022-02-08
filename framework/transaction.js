@@ -152,21 +152,9 @@ const verifyTransactions = (
 
 const wait = time => new Promise(resolve => setTimeout(resolve, time));
 
-const size = 5000;
+const size = 4000;
 
-(async () => {
-	console.log('Creating accounts');
-	const accounts = [];
-	for (let i = 0; i < size; i += 1) {
-		accounts.push(createAccount());
-	}
-	const env = await getBlockProcessingEnv({
-		options: {
-			databasePath: './testdb',
-		},
-	});
-	env.accounts.push(...accounts);
-
+const measure = async (env, accounts, replace) => {
 	console.log('Creating transactions');
 	// create 5000 accounts
 	const transfers = [];
@@ -202,7 +190,7 @@ const size = 5000;
 		env.getConsensus()['_logger'],
 	);
 
-	const pool = new TransactionPool({
+	let pool = new TransactionPool({
 		baseFees: [{ moduleID: 12, commandID: 1, baseFee: BigInt(1000000000) }],
 		maxPayloadLength: 15 * 1024,
 		minFeePerByte: 1000,
@@ -232,6 +220,18 @@ const size = 5000;
 	}
 	console.timeEnd('trans');
 
+	if (!replace) {
+		pool = new TransactionPool({
+			baseFees: [{ moduleID: 12, commandID: 1, baseFee: BigInt(1000000000) }],
+			maxPayloadLength: 15 * 1024,
+			minFeePerByte: 1000,
+			maxTransactions: 4096,
+			maxTransactionsPerAccount: 64,
+			minEntranceFeePriority: 0,
+			applyTransactions: async transactions => verifyTx(transactions),
+		});
+	}
+
 	console.log('Creating transactions');
 	// register 5000 delegates
 	const delegateRegs = [];
@@ -260,6 +260,17 @@ const size = 5000;
 	console.log('Current height', env.getLastBlock().header.height);
 
 	console.log('Creating transactions');
+	if (!replace) {
+		pool = new TransactionPool({
+			baseFees: [{ moduleID: 12, commandID: 1, baseFee: BigInt(1000000000) }],
+			maxPayloadLength: 15 * 1024,
+			minFeePerByte: 1000,
+			maxTransactions: 4096,
+			maxTransactionsPerAccount: 64,
+			minEntranceFeePriority: 0,
+			applyTransactions: async transactions => verifyTx(transactions),
+		});
+	}
 	// votes delegates
 	const votes = [];
 	for (let i = 0; i < size; i += 1) {
@@ -282,4 +293,21 @@ const size = 5000;
 		await pool.add(tx);
 	}
 	console.timeEnd('votes');
+};
+
+(async () => {
+	console.log('Creating accounts');
+	const accounts = [];
+	for (let i = 0; i < size; i += 1) {
+		accounts.push(createAccount());
+	}
+	const env = await getBlockProcessingEnv({
+		options: {
+			databasePath: './testdb',
+		},
+	});
+	env.accounts.push(...accounts);
+	await measure(env, accounts);
+	console.log('*'.repeat(100))
+	await measure(env, accounts, true);
 })();
