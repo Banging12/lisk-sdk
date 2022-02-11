@@ -391,7 +391,16 @@ export class SparseMerkleTree {
 			return currentNode;
 		}
 		if (keys.length === 1) {
-			return this._update(keys[0], values[0], currentNode, height);
+			if (currentNode instanceof Empty) {
+				const newLeaf = Leaf.fromData(keys[0], values[0]);
+				await this._db.set(newLeaf.hash, newLeaf.data);
+				return newLeaf;
+			}
+			if (currentNode instanceof Leaf && currentNode.key.equals(keys[0])) {
+				const newLeaf = Leaf.fromData(keys[0], values[0]);
+				await this._db.set(newLeaf.hash, newLeaf.data);
+				return newLeaf;
+			}
 		}
 
 		const { left: lKeys, right: rKeys } = splitKeys(keys, height);
@@ -407,8 +416,7 @@ export class SparseMerkleTree {
 			} else {
 				leftNode = currentNode;
 			}
-		}
-		if (currentNode instanceof Branch) {
+		} else if (currentNode instanceof Branch) {
 			leftNode = await this.getNode(currentNode.leftHash);
 			rightNode = await this.getNode(currentNode.rightHash);
 			await this._db.del(currentNode.hash);
