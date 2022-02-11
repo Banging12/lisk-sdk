@@ -18,6 +18,7 @@ import { MerkleTree } from './merkle_tree/merkle_tree';
 import { calculateRootFromRightWitness, verifyRightWitness } from './merkle_tree/right_witness';
 import { calculateMerkleRoot, calculateMerkleRootWithLeaves } from './merkle_tree/utils';
 import { SparseMerkleTree } from './sparse_merkle_tree/sparse_merkle_tree';
+import { SkipMerkleTree } from './skip_merkle_tree/skip_merkle_tree';
 import { verify, calculateRoot } from './sparse_merkle_tree/utils';
 
 export const regularMerkleTree = {
@@ -36,4 +37,4 @@ export const sparseMerkleTree = {
 	SparseMerkleTree,
 };
 
-export { MerkleTree, SparseMerkleTree };
+export { MerkleTree, SparseMerkleTree, SkipMerkleTree };

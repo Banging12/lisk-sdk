@@ -71,7 +71,7 @@ export class SkipMerkleTree {
 		const [structure, nodes] = parseSubTreeData(data);
 		return SubTree.fromData(structure, nodes);
     }
-	
+
 	// As specified in from https://github.com/LiskHQ/lips/blob/master/proposals/lip-0039.md
 	public async update(keys: Buffer[], values: Buffer[]): Promise<SubTree> {
             if (keys.length !== values.length) {
@@ -80,11 +80,11 @@ export class SkipMerkleTree {
             if (keys.length === 0) {
                 return await this.getSubTree(this._rootHash);
             }
-    
+
             if (keys[0].length !== this.keyLength) {
                 throw new Error(`Key is not equal to defined key length of ${this.keyLength}`);
             }
-    
+
         const { keys: sortedKey, values: sortedValue } = sortKeys(keys, values);
 		const root = await this.getSubTree(this._rootHash);
 		const newRoot = await this._updateSubtree(sortedKey, sortedValue, root, 0);
@@ -100,7 +100,7 @@ export class SkipMerkleTree {
         height: number
 	): Promise<SubTree> {
 
-        
+
         if (keys.length === 0)
             return currentSubtree
 
@@ -117,17 +117,17 @@ export class SkipMerkleTree {
             const k = keys[i];
             const v = values[i];
             let binIdx;
-            if (height%8 === 0) 
+            if (height%8 === 0)
                 binIdx = k[b] >> 4;
             else if (height%8 === 4)
                 binIdx = k[b] & 15;
             else
                 throw new Error('Invalid key.')
-                
+
             binKeys[binIdx].push(k)
             binValues[binIdx].push(v)
         }
-            
+
 
         const newNodes: TreeNode[] = [];
         const newStructure: number[] = [];
@@ -168,13 +168,13 @@ export class SkipMerkleTree {
         const totalData = keyBins.map ( kb => kb.length).reduce((a,b)=>a+b);
         if (totalData === 0)
             return [[currentNode], [h]];
-        
+
         if ((currentNode instanceof Empty) && totalData === 1) {
             const idx = keyBins.findIndex(el => el.length === 1);
             const newLeaf = Leaf.fromData(keyBins[idx][0], valueBins[idx][0]);
             return [[newLeaf], [h]];
         }
-            
+
         // If we are at the bottom of the tree, we call update_subtree and return update nodes
         if (h === this.subtreeHeight) {
             let btmSubtree: SubTree;
@@ -192,7 +192,7 @@ export class SkipMerkleTree {
             return [[Branch.fromData(newSubTree.hash)], [h]];
 
         }
-        
+
         // Else, we just call _updateNode and return the returned values
         let leftNode, rightNode;
         if (currentNode instanceof Empty) {
@@ -241,13 +241,13 @@ export class SkipMerkleTree {
 	// 	return newRoot;
 
     // }
-    
+
     // private async _remove(keys: Buffer[], currentSubtree: SubTree, height: number): Promise<SubTree> {
     //     if (keys.length === 0)
     //         return currentSubtree
 
     //     const binKeys: Buffer[][] = [];
-        
+
     //     for (let _ = 0; _ < keys.length; _++) {
     //         binKeys.push([]);
     //     }
@@ -256,7 +256,7 @@ export class SkipMerkleTree {
     //     for (let i = 0; i < keys.length; i++) {
     //         const k = keys[i];
     //         let binIdx;
-    //         if (height%8 === 0) 
+    //         if (height%8 === 0)
     //             binIdx = k[b] >> 4;
     //         else if (height%8 === 4)
     //             binIdx = k[b] & 15;
@@ -265,7 +265,7 @@ export class SkipMerkleTree {
 
     //         binKeys[binIdx].push(k)
     //     }
-            
+
 
     //     const newNodes: TreeNode[] = [];
     //     const newStructure: number[] = [];

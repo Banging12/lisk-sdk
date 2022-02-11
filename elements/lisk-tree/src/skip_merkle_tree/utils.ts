@@ -49,14 +49,14 @@ export const parseSubTreeData = (data: Buffer): [number[], TreeNode[]] => {
     const nodesData = data.slice(subtreeNodesLength + 1);
 
     const nodes: TreeNode[] = [];
-    
+
     let idx = 0;
-    while (idx < nodesData.length) { 
+    while (idx < nodesData.length) {
         if (nodesData[idx] === LEAF_HASH_PREFIX_INT) {
             const key = nodesData.slice(idx + LEAF_HASH_PREFIX.length, idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH)
             const value = nodesData.slice(idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH, idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH + NODE_HASH_SIZE)
             nodes.push(Leaf.fromData(key, value));
-            
+
             idx += LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH + NODE_HASH_SIZE;
         } else if (nodesData[idx] === BRANCH_HASH_PREFIX_INT) {
             const _hash = nodesData.slice(idx + BRANCH_HASH_PREFIX.length, idx + BRANCH_HASH_PREFIX.length + NODE_HASH_SIZE)
