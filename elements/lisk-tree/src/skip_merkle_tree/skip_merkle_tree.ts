@@ -23,7 +23,6 @@ import { Branch } from './branch';
 import { Empty } from './empty';
 
 import { SubTree } from './subtree';
-import {EmptySubTree} from './empty_subtree';
 import { isBitSet } from './utils';
 
 
@@ -59,7 +58,7 @@ export class SkipMerkleTree {
 
     public async getSubTree(nodeHash: Buffer): Promise<SubTree> {
         if (nodeHash.equals(EMPTY_HASH)) {
-			return new EmptySubTree();
+			return SubTree.fromData([0], [new Empty()]);
 		}
 		const data = await this._db.get(nodeHash);
 
@@ -94,7 +93,6 @@ export class SkipMerkleTree {
 		return newRoot;
 	}
 
-
 	private async _updateSubtree(
 		keys: Buffer[],
         values: Buffer[],
@@ -103,13 +101,13 @@ export class SkipMerkleTree {
 	): Promise<SubTree> {
 
         
-        if (keys.length ===0)
+        if (keys.length === 0)
             return currentSubtree
 
         const bin_keys: Buffer[][] = [];
         const bin_values: Buffer[][] = [];
-        
-        for (let _ = 0; _ < keys.length; _++) {
+
+        for (let i = 0; i < this.numberOfNodes; i++) {
             bin_keys.push([]);
             bin_values.push([]);
         }
@@ -125,7 +123,7 @@ export class SkipMerkleTree {
                 bin_idx = k[b] & 15;
             else
                 throw new Error('Invalid key.')
-
+                
             bin_keys[bin_idx].push(k)
             bin_values[bin_idx].push(v)
         }
@@ -135,7 +133,7 @@ export class SkipMerkleTree {
         const new_structure: number[] = [];
 
         let V = 0;
-        
+
         for (let i = 0; i < currentSubtree.nodes.length; i++) {
             const h = currentSubtree.structure[i];
             const currentNode = currentSubtree.nodes[i];
@@ -207,7 +205,7 @@ export class SkipMerkleTree {
         } else
             throw new Error('Invalid data.');
 
-        const idx = Math.floor(key_bins.length/2)
+        const idx = Math.floor(key_bins.length/2);
         const [leftNodes, leftHeights] = await this._updateNode(
             key_bins.slice(0, idx), value_bins.slice(0, idx), left_node, height, h + 1
         );
@@ -222,4 +220,55 @@ export class SkipMerkleTree {
 
 
     }
+
+    // public async remove(keys: Buffer[]): Promise<SubTree> {
+    //     if (keys.length === 0) {
+    //         return await this.getSubTree(this._rootHash);
+    //     }
+
+    //     if (keys[0].length !== this.keyLength) {
+    //         throw new Error(`Key is not equal to defined key length of ${this.keyLength}`);
+    //     }
+
+    //     const root = await this.getSubTree(this._rootHash);
+    //     const newRoot = await this._remove(keys, root, 0);
+	// 	this._rootHash = newRoot.hash;
+
+	// 	return newRoot;
+
+    // }
+    
+    // private async _remove(keys: Buffer[], currentSubtree: SubTree, height: number): Promise<SubTree> {
+    //     if (keys.length === 0)
+    //         return currentSubtree
+
+    //     const bin_keys: Buffer[][] = [];
+        
+    //     for (let _ = 0; _ < keys.length; _++) {
+    //         bin_keys.push([]);
+    //     }
+
+    //     const b = Math.floor(height/8);
+    //     for (let i = 0; i < keys.length; i++) {
+    //         const k = keys[i];
+    //         let bin_idx;
+    //         if (height%8 === 0) 
+    //             bin_idx = k[b] >> 4;
+    //         else if (height%8 === 4)
+    //             bin_idx = k[b] & 15;
+    //         else
+    //             throw new Error('Invalid key.')
+
+    //         bin_keys[bin_idx].push(k)
+    //     }
+            
+
+    //     const new_nodes: TreeNode[] = [];
+    //     const new_structure: number[] = [];
+    // }
+
+
 }
+
+
+
