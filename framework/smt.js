@@ -1,5 +1,6 @@
 const {
 	sparseMerkleTree: { SparseMerkleTree },
+	SkipMerkleTree,
 } = require('@liskhq/lisk-tree');
 const { KVStore, InMemoryKVStore } = require('@liskhq/lisk-db');
 const { getRandomBytes, hash } = require('@liskhq/lisk-cryptography');
@@ -29,7 +30,7 @@ const measure = async (iteration, keep) => {
 	}
 	kvdata = next;
 	const smtStore = new SMTStore(db);
-	const smt = new SparseMerkleTree({ db: smtStore, rootHash: root, keyLength: 38 });
+	const smt = new SkipMerkleTree({ db: smtStore, rootHash: root, keyLength: 38 });
 	console.time('smt');
 	console.time('smt-update');
 	for (const data of kvdata) {
@@ -56,28 +57,28 @@ const measureBatch = async (iteration, keep) => {
 	const values = [];
 	for (let i = 0; i < iteration; i += 1) {
 		if (keep) {
-			const nextKey = kvdata[i] ? kvdata[i].key : getRandomBytes(38);
+			const nextKey = kvdata[i] ? kvdata[i].key : getRandomBytes(32);
 			next.push({
 				key: nextKey,
-				value: getRandomBytes(200),
+				value: getRandomBytes(32),
 			});
 			keys.push(nextKey);
-			values.push(getRandomBytes(200));
+			values.push(getRandomBytes(32));
 		} else {
 			next.push({
-				key: getRandomBytes(38),
-				value: getRandomBytes(200),
+				key: getRandomBytes(32),
+				value: getRandomBytes(32),
 			});
-			keys.push(getRandomBytes(38));
-			values.push(getRandomBytes(200));
+			keys.push(getRandomBytes(32));
+			values.push(getRandomBytes(32));
 		}
 	}
 	kvdata = next;
 	const smtStore = new SMTStore(db);
-	const smt = new SparseMerkleTree({ db: smtStore, rootHash: root, keyLength: 38 });
+	const smt = new SkipMerkleTree({ db: smtStore, rootHash: root, keyLength: 32 });
 	console.time('smt-batch');
 	console.time('smt-update-batch');
-	await smt.updateBatch(keys, values);
+	await smt.update(keys, values);
 	console.timeEnd('smt-update-batch');
 	console.time('smt-save-batch');
 	const batch = db.batch();
