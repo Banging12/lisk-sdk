@@ -41,7 +41,7 @@ export class SubTree {
 		return this._data;
 	}
 
-    public static calculate_root(structure: number[], nodes: TreeNode[]): Buffer {
+    public static calculateRoot(structure: number[], nodes: TreeNode[]): Buffer {
         let nodeHashes: Buffer[] = nodes.map(node => node.hash);
         const H = structure.length;
         for (let height = H; height > 0; height--) {
@@ -50,7 +50,7 @@ export class SubTree {
             
             let i = 0;
 
-            while (1 < nodeHashes.length) {
+            while (i < nodeHashes.length) {
                 if (structure[i] == height) {
                     const _hash = hash(branchData(Buffer.concat([nodeHashes[i], nodeHashes[i + 1]])));
                     _hashes.push(_hash)
@@ -66,11 +66,11 @@ export class SubTree {
             nodeHashes = _hashes;
             structure = _structure;
         } 
-        return nodeHashes[0]
+        return nodeHashes[0];
     }
 
 	public static fromData(structure: number[], nodes: TreeNode[]): SubTree {
-        const nodeHash = this.calculate_root(structure, nodes);
+        const nodeHash = this.calculateRoot(structure, nodes);
 		return new SubTree(structure, nodes, nodeHash);
 	}
 

@@ -104,71 +104,75 @@ export class SkipMerkleTree {
         if (keys.length === 0)
             return currentSubtree
 
-        const bin_keys: Buffer[][] = [];
-        const bin_values: Buffer[][] = [];
+        const binKeys: Buffer[][] = [];
+        const binValues: Buffer[][] = [];
 
-        for (let i = 0; i < this.numberOfNodes; i++) {
-            bin_keys.push([]);
-            bin_values.push([]);
+        for (let i = 0; i < this.numberOfNodes; i+=1) {
+            binKeys.push([]);
+            binValues.push([]);
         }
 
         const b = Math.floor(height/8);
-        for (let i = 0; i < keys.length; i++) {
+        for (let i = 0; i < keys.length; i+=1) {
             const k = keys[i];
             const v = values[i];
-            let bin_idx;
+            let binIdx;
             if (height%8 === 0) 
-                bin_idx = k[b] >> 4;
+                binIdx = k[b] >> 4;
             else if (height%8 === 4)
-                bin_idx = k[b] & 15;
+                binIdx = k[b] & 15;
             else
                 throw new Error('Invalid key.')
                 
-            bin_keys[bin_idx].push(k)
-            bin_values[bin_idx].push(v)
+            binKeys[binIdx].push(k)
+            binValues[binIdx].push(v)
         }
             
 
-        const new_nodes: TreeNode[] = [];
-        const new_structure: number[] = [];
+        const newNodes: TreeNode[] = [];
+        const newStructure: number[] = [];
 
         let V = 0;
 
-        for (let i = 0; i < currentSubtree.nodes.length; i++) {
+        for (let i = 0; i < currentSubtree.nodes.length; i+=1) {
             const h = currentSubtree.structure[i];
             const currentNode = currentSubtree.nodes[i];
             const incr = 1 << (this.subtreeHeight - h);
 
             const [_nodes, _heights] = await this._updateNode(
-                bin_keys.slice(V, V + incr), bin_values.slice(V, V + incr), currentNode, height, h
+                binKeys.slice(V, V + incr), binValues.slice(V, V + incr), currentNode, height, h
             )
-            new_nodes.push(... _nodes);
-            new_structure.push(... _heights);
+            newNodes.push(... _nodes);
+            newStructure.push(... _heights);
             V += incr
         }
 
+        if (V !== this.numberOfNodes) {
+            throw new Error('Invalid number of Nodes.');
+        }
 
-        const new_subtree = SubTree.fromData(new_structure, new_nodes);
-        await this._db.set(new_subtree.hash, new_subtree.data);
-        return new_subtree;
+
+        const newSubTree = SubTree.fromData(newStructure, newNodes);
+        await this._db.set(newSubTree.hash, newSubTree.data);
+        return newSubTree;
     }
 
     private async _updateNode(
-		key_bins: Buffer[][],
-        value_bins: Buffer[][],
+		keyBins: Buffer[][],
+        valueBins: Buffer[][],
         currentNode: TreeNode,
         height: number,
         h: number
 	): Promise<[TreeNode[], number[]]> {
 
-        const totalData = key_bins.map ( kb => kb.length).reduce((a,b)=>a+b);
+        const totalData = keyBins.map ( kb => kb.length).reduce((a,b)=>a+b);
         if (totalData === 0)
             return [[currentNode], [h]];
         
         if ((currentNode instanceof Empty) && totalData === 1) {
-            const idx = key_bins.findIndex(el => el.length === 1);
-            const new_leaf = Leaf.fromData(key_bins[idx][0], value_bins[idx][0]);
-            return [[new_leaf], [h]];
+            const idx = keyBins.findIndex(el => el.length === 1);
+            const newLeaf = Leaf.fromData(keyBins[idx][0], valueBins[idx][0]);
+            return [[newLeaf], [h]];
         }
             
         // If we are at the bottom of the tree, we call update_subtree and return update nodes
@@ -184,33 +188,33 @@ export class SkipMerkleTree {
             } else
                 throw new Error('Invalid data.');
 
-            const new_subtree = await this._updateSubtree(key_bins[0], value_bins[0], btmSubtree, height + h);
-            return [[Branch.fromData(new_subtree.hash)], [h]];
+            const newSubTree = await this._updateSubtree(keyBins[0], valueBins[0], btmSubtree, height + h);
+            return [[Branch.fromData(newSubTree.hash)], [h]];
 
         }
         
         // Else, we just call _updateNode and return the returned values
-        let left_node, right_node;
+        let leftNode, rightNode;
         if (currentNode instanceof Empty) {
-            left_node = new Empty();
-            right_node = new Empty();
+            leftNode = new Empty();
+            rightNode = new Empty();
         } else if (currentNode instanceof Leaf) {
             if (isBitSet(currentNode.key, height + h)) {
-                left_node = new Empty();
-                right_node = currentNode;
+                leftNode = new Empty();
+                rightNode = currentNode;
             } else {
-                left_node = currentNode;
-                right_node = new Empty();
+                leftNode = currentNode;
+                rightNode = new Empty();
             }
         } else
             throw new Error('Invalid data.');
 
-        const idx = Math.floor(key_bins.length/2);
+        const idx = Math.floor(keyBins.length/2);
         const [leftNodes, leftHeights] = await this._updateNode(
-            key_bins.slice(0, idx), value_bins.slice(0, idx), left_node, height, h + 1
+            keyBins.slice(0, idx), valueBins.slice(0, idx), leftNode, height, h + 1
         );
         const [rightNodes, rightHeights] = await this._updateNode(
-            key_bins.slice(idx), value_bins.slice(idx), right_node, height, h + 1
+            keyBins.slice(idx), valueBins.slice(idx), rightNode, height, h + 1
         );
 
         leftNodes.push(... rightNodes);
@@ -242,29 +246,29 @@ export class SkipMerkleTree {
     //     if (keys.length === 0)
     //         return currentSubtree
 
-    //     const bin_keys: Buffer[][] = [];
+    //     const binKeys: Buffer[][] = [];
         
     //     for (let _ = 0; _ < keys.length; _++) {
-    //         bin_keys.push([]);
+    //         binKeys.push([]);
     //     }
 
     //     const b = Math.floor(height/8);
     //     for (let i = 0; i < keys.length; i++) {
     //         const k = keys[i];
-    //         let bin_idx;
+    //         let binIdx;
     //         if (height%8 === 0) 
-    //             bin_idx = k[b] >> 4;
+    //             binIdx = k[b] >> 4;
     //         else if (height%8 === 4)
-    //             bin_idx = k[b] & 15;
+    //             binIdx = k[b] & 15;
     //         else
     //             throw new Error('Invalid key.')
 
-    //         bin_keys[bin_idx].push(k)
+    //         binKeys[binIdx].push(k)
     //     }
             
 
-    //     const new_nodes: TreeNode[] = [];
-    //     const new_structure: number[] = [];
+    //     const newNodes: TreeNode[] = [];
+    //     const newStructure: number[] = [];
     // }
 
 
