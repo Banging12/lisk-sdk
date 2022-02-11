@@ -41,11 +41,10 @@ export const isBitSet = (bits: Buffer, i: number): boolean =>
 	((bits[Math.floor(i / 8)] << i % 8) & 0x80) === 0x80;
 
 export const parseSubTreeData = (data: Buffer): [number[], TreeNode[]] => {
-	const subtreeNodesLength = data.slice(0, 1).readInt32BE(0);
+	const subtreeNodesLength = data[0] + 1;
     const structure: number[] = [];
-    for (let index = 1; index < subtreeNodesLength + 1; index++) {
+    for (let index = 1; index < subtreeNodesLength + 1; index+=1) {
         structure.push(data[index]);
-        
     }
     const nodesData = data.slice(subtreeNodesLength + 1);
 
@@ -81,10 +80,10 @@ export const branchData = (nodeHash: Buffer): Buffer =>
 	Buffer.concat([BRANCH_HASH_PREFIX, nodeHash]);
 
 export const subTreeData = (structure: number[], nodes: TreeNode[]): Buffer => {
-    const subtreeNodesLength = Buffer.from([structure.length]);
-    const structure_data = Buffer.concat(structure.map(h => Buffer.from([h])));
+    const subtreeNodesLength = Buffer.from([structure.length - 1]);
+    const structureData = Buffer.concat(structure.map(h => Buffer.from([h])));
     const nodesData = Buffer.concat(nodes.map(node => node.data));
-    return Buffer.concat([subtreeNodesLength, structure_data, nodesData]);
+    return Buffer.concat([subtreeNodesLength, structureData, nodesData]);
 }
 
 export const sortKeys = (
