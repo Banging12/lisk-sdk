@@ -1,18 +1,25 @@
 const {
 	sparseMerkleTree: { SparseMerkleTree },
 	SkipMerkleTree,
+	FastSkipMerkleTree,
 } = require('@liskhq/lisk-tree');
 const { KVStore, InMemoryKVStore } = require('@liskhq/lisk-db');
 const { getRandomBytes, hash } = require('@liskhq/lisk-cryptography');
 const { SMTStore } = require('@liskhq/lisk-chain');
 
+const { performance } = require('perf_hooks');
+const chalk = require('chalk');
+
 const db = new KVStore('./state.db');
+const kdb = new KVStore('./kstate.db');
+const fkdb = new KVStore('./fkstate.db');
 // const db = new InMemoryKVStore();
 let kvdata = [];
 let smtRoot;
 let skmtRoot;
+let fskmtRoot;
 
-const measureSMT = async (iteration, keep) => {
+const measure = async (iteration, keep) => {
 	const next = [];
 	const keys = [];
 	const values = [];
@@ -35,11 +42,13 @@ const measureSMT = async (iteration, keep) => {
 		}
 	}
 	kvdata = next;
+
 	const smtStore = new SMTStore(db);
 	const smt = new SparseMerkleTree({ db: smtStore, rootHash: smtRoot, keyLength: 32 });
+	const start = performance.now();
 	console.time('smt-batch');
 	console.time('smt-update-batch');
-	await smt.update(keys, values);
+	await smt.update([...keys], [...values]);
 	console.timeEnd('smt-update-batch');
 	console.time('smt-save-batch');
 	const batch = db.batch();
@@ -48,55 +57,69 @@ const measureSMT = async (iteration, keep) => {
 	smtRoot = smt.rootHash;
 	console.timeEnd('smt-save-batch');
 	console.timeEnd('smt-batch');
-	console.log(smt.rootHash.toString('hex'));
-};
+	const smtTime = performance.now() - start;
 
-const measureSKMT = async (iteration, keep) => {
-	const next = [];
-	const keys = [];
-	const values = [];
-	for (let i = 0; i < iteration; i += 1) {
-		if (keep) {
-			const nextKey = kvdata[i] ? kvdata[i].key : getRandomBytes(32);
-			next.push({
-				key: nextKey,
-				value: getRandomBytes(32),
-			});
-			keys.push(nextKey);
-			values.push(getRandomBytes(32));
-		} else {
-			next.push({
-				key: getRandomBytes(32),
-				value: getRandomBytes(32),
-			});
-			keys.push(getRandomBytes(32));
-			values.push(getRandomBytes(32));
-		}
-	}
-	kvdata = next;
-	const smtStore = new SMTStore(db);
-	const smt = new SkipMerkleTree({ db: smtStore, rootHash: skmtRoot, keyLength: 32 });
+	const skmtStore = new SMTStore(kdb);
+	const skmt = new SkipMerkleTree({ db: skmtStore, rootHash: skmtRoot, keyLength: 32 });
+	const kstart = performance.now();
 	console.time('skmt-batch');
 	console.time('skmt-update-batch');
-	await smt.update(keys, values);
+	await skmt.update([...keys], [...values]);
 	console.timeEnd('skmt-update-batch');
 	console.time('skmt-save-batch');
-	const batch = db.batch();
-	smtStore.finalize(batch);
-	await batch.write();
-	skmtRoot = smt.rootHash;
+	const kbatch = kdb.batch();
+	skmtStore.finalize(kbatch);
+	await kbatch.write();
+	skmtRoot = skmt.rootHash;
 	console.timeEnd('skmt-save-batch');
 	console.timeEnd('skmt-batch');
-	console.log(smt.rootHash.toString('hex'));
+	const skmtTime = performance.now() - kstart;
+
+	// const fskmtStore = new SMTStore(fkdb);
+	// const fskmt = new FastSkipMerkleTree({ db: fskmtStore, rootHash: fskmtRoot, keyLength: 32 });
+	// const fkstart = performance.now();
+	// console.time('fskmt-batch');
+	// console.time('fskmt-update-batch');
+	// await skmt.update([...keys], [...values]);
+	// console.timeEnd('fskmt-update-batch');
+	// console.time('fskmt-save-batch');
+	// const fkbatch = fkdb.batch();
+	// skmtStore.finalize(fkbatch);
+	// await fkbatch.write();
+	// fskmtRoot = fskmt.rootHash;
+	// console.timeEnd('fskmt-save-batch');
+	// console.timeEnd('fskmt-batch');
+	// const fskmtTime = performance.now() - fkstart;
+
+	if (!smt.rootHash.equals(skmt.rootHash))
+		// || !smt.rootHash.equals(fskmt.rootHash))
+		throw new Error('Mismatching roots.');
+
+	if (smtTime > skmtTime)
+		console.log(
+			chalk.green(
+				`SMT ${smtTime.toFixed(2)} ms; SKMT ${skmtTime.toFixed(2)} ms -> ${(
+					(100 * skmtTime) /
+					smtTime
+				).toFixed(2)}%`,
+			),
+		);
+	else
+		console.log(
+			chalk.red(
+				`SMT ${smtTime.toFixed(2)} ms; SKMT ${skmtTime.toFixed(2)} ms -> ${(
+					(100 * skmtTime) /
+					smtTime
+				).toFixed(2)}%`,
+			),
+		);
 };
 
 (async () => {
 	let total = 0;
 	for (let i = 0; i < 1000; i++) {
 		console.log('iteration batch update', 10000);
-		await measureSMT(10000);
-		console.log('\n');
-		await measureSKMT(10000);
+		await measure(10000);
 		total += 10000;
 		console.log('^^^^ total', total);
 		console.log('\n');
