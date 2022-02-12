@@ -224,6 +224,15 @@ export class SkipMerkleTree {
             keyBins.slice(idx), valueBins.slice(idx), rightNode, height, h + 1
         );
 
+        // const [[leftNodes, leftHeights], [rightNodes, rightHeights]] = await Promise.all([
+        //     this._updateNode(
+        //         keyBins.slice(0, idx), valueBins.slice(0, idx), leftNode, height, h + 1
+        //     ),
+        //     this._updateNode(
+        //         keyBins.slice(idx), valueBins.slice(idx), rightNode, height, h + 1
+        //     )
+        // ]);
+
         leftNodes.push(... rightNodes);
         leftHeights.push(... rightHeights);
 

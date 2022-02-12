@@ -13,7 +13,8 @@
  */
 
 import { InMemoryDB } from '../../src/inmemory_db';
-import { SkipMerkleTree } from '../../src/skip_merkle_tree/skip_merkle_tree';
+// import { SkipMerkleTree } from '../../src/skip_merkle_tree/skip_merkle_tree';
+import { FastSkipMerkleTree } from '../../src/skip_merkle_tree/fast_skip_merkle_tree';
 import { Database } from '../../src/skip_merkle_tree/types';
 import * as fixtures from '../fixtures/sparse_merkle_tree/update_tree.json';
 import * as SMTFixtures from '../fixtures/sparse_merkle_tree/smt_fixtures.json';
@@ -23,11 +24,11 @@ describe('SkipMerkleTree', () => {
 
 	describe('update', () => {
 		let db: Database;
-		let smt: SkipMerkleTree;
+		let smt: FastSkipMerkleTree;
 
 		beforeEach(() => {
 			db = new InMemoryDB();
-			smt = new SkipMerkleTree({ db, keyLength: 32 });
+			smt = new FastSkipMerkleTree({ db, keyLength: 32 });
 		});
 
 		for (const test of fixtures.testCases.slice(0, 1)) {

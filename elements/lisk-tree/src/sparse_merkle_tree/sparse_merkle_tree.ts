@@ -417,6 +417,8 @@ export class SparseMerkleTree {
 				this._update(lKeys, lValues, leftNode, height + 1),
 				this._update(rKeys, rValues, rightNode, height + 1),
 			]);
+            // const updatedLeft = await this._update(lKeys, lValues, leftNode, height + 1);
+            // const updatedRight = await this._update(rKeys, rValues, rightNode, height + 1);
 			leftNodeHash = updatedLeft.hash;
 			rightNodeHash = updatedRight.hash;
 		}
