@@ -86,6 +86,11 @@ export const subTreeData = (structure: number[], nodes: TreeNode[]): Buffer => {
     return Buffer.concat([subtreeNodesLength, structureData, nodesData]);
 }
 
+export const cumulativeSum = (numberArray: number[]): number[] => {
+    let cumSum = 0;
+    return numberArray.map(x => cumSum += x);
+}
+
 export const sortKeys = (
 	keys: Buffer[],
 	values: Buffer[],

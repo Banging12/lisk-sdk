@@ -169,12 +169,6 @@ export class SkipMerkleTree {
         if (totalData === 0)
             return [[currentNode], [h]];
 
-        // if ((currentNode instanceof Empty) && totalData === 1) {
-        //     const idx = keyBins.findIndex(el => el.length === 1);
-        //     const newLeaf = Leaf.fromData(keyBins[idx][0], valueBins[idx][0]);
-        //     return [[newLeaf], [h]];
-        // }
-
         if (totalData === 1) {
             const idx = keyBins.findIndex(el => el.length === 1);
 			if (currentNode instanceof Empty) {
