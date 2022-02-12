@@ -13,7 +13,7 @@
  */
 
 import { Branch } from './branch';
-import { BRANCH_HASH_PREFIX, BRANCH_HASH_PREFIX_INT, DEFAULT_KEY_LENGTH, EMPTY_PLACEHOLDER_PREFIX, EMPTY_PLACEHOLDER_PREFIX_INT, LEAF_HASH_PREFIX, LEAF_HASH_PREFIX_INT, NODE_HASH_SIZE } from './constants';
+import { BRANCH_HASH_PREFIX, BRANCH_HASH_PREFIX_INT, EMPTY_PLACEHOLDER_PREFIX, EMPTY_PLACEHOLDER_PREFIX_INT, LEAF_HASH_PREFIX, LEAF_HASH_PREFIX_INT, NODE_HASH_SIZE } from './constants';
 import { Empty } from './empty';
 import { Leaf } from './leaf';
 import { TreeNode } from './types';
@@ -40,7 +40,7 @@ export const isBitSet = (bits: Buffer, i: number): boolean =>
 	// eslint-disable-next-line no-bitwise
 	((bits[Math.floor(i / 8)] << i % 8) & 0x80) === 0x80;
 
-export const parseSubTreeData = (data: Buffer): [number[], TreeNode[]] => {
+export const parseSubTreeData = (data: Buffer, keyLength: number): [number[], TreeNode[]] => {
 	const subtreeNodesLength = data[0] + 1;
     const structure: number[] = [];
     for (let index = 1; index < subtreeNodesLength + 1; index+=1) {
@@ -53,11 +53,11 @@ export const parseSubTreeData = (data: Buffer): [number[], TreeNode[]] => {
     let idx = 0;
     while (idx < nodesData.length) {
         if (nodesData[idx] === LEAF_HASH_PREFIX_INT) {
-            const key = nodesData.slice(idx + LEAF_HASH_PREFIX.length, idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH)
-            const value = nodesData.slice(idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH, idx + LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH + NODE_HASH_SIZE)
+            const key = nodesData.slice(idx + LEAF_HASH_PREFIX.length, idx + LEAF_HASH_PREFIX.length + keyLength)
+            const value = nodesData.slice(idx + LEAF_HASH_PREFIX.length + keyLength, idx + LEAF_HASH_PREFIX.length + keyLength + NODE_HASH_SIZE)
             nodes.push(Leaf.fromData(key, value));
 
-            idx += LEAF_HASH_PREFIX.length + DEFAULT_KEY_LENGTH + NODE_HASH_SIZE;
+            idx += LEAF_HASH_PREFIX.length + keyLength + NODE_HASH_SIZE;
         } else if (nodesData[idx] === BRANCH_HASH_PREFIX_INT) {
             const _hash = nodesData.slice(idx + BRANCH_HASH_PREFIX.length, idx + BRANCH_HASH_PREFIX.length + NODE_HASH_SIZE)
             nodes.push(Branch.fromData(_hash));

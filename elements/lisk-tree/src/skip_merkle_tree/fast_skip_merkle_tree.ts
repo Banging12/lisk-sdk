@@ -69,7 +69,7 @@ export class FastSkipMerkleTree {
 			);
 		}
 
-		const [structure, nodes] = parseSubTreeData(data);
+		const [structure, nodes] = parseSubTreeData(data, this.keyLength);
 		return SubTree.fromData(structure, nodes);
     }
 

@@ -13,6 +13,9 @@ const chalk = require('chalk');
 const db = new KVStore('./state.db');
 const kdb = new KVStore('./kstate.db');
 const fkdb = new KVStore('./fkstate.db');
+
+const KEY_LENGTH = 20;
+
 // const db = new InMemoryKVStore();
 let kvdata = [];
 let smtRoot;
@@ -25,26 +28,26 @@ const measure = async (iteration, keep) => {
 	const values = [];
 	for (let i = 0; i < iteration; i += 1) {
 		if (keep) {
-			const nextKey = kvdata[i] ? kvdata[i].key : getRandomBytes(32);
+			const nextKey = kvdata[i] ? kvdata[i].key : getRandomBytes(KEY_LENGTH);
 			next.push({
 				key: nextKey,
-				value: getRandomBytes(32),
+				value: hash(getRandomBytes(KEY_LENGTH)),
 			});
 			keys.push(nextKey);
-			values.push(getRandomBytes(32));
+			values.push(hash(getRandomBytes(KEY_LENGTH)));
 		} else {
 			next.push({
-				key: getRandomBytes(32),
-				value: getRandomBytes(32),
+				key: getRandomBytes(KEY_LENGTH),
+				value: hash(getRandomBytes(KEY_LENGTH)),
 			});
-			keys.push(getRandomBytes(32));
-			values.push(getRandomBytes(32));
+			keys.push(getRandomBytes(KEY_LENGTH));
+			values.push(hash(getRandomBytes(KEY_LENGTH)));
 		}
 	}
 	kvdata = next;
 
 	const smtStore = new SMTStore(db);
-	const smt = new SparseMerkleTree({ db: smtStore, rootHash: smtRoot, keyLength: 32 });
+	const smt = new SparseMerkleTree({ db: smtStore, rootHash: smtRoot, keyLength: KEY_LENGTH });
 	const start = performance.now();
 	console.time('smt-batch');
 	console.time('smt-update-batch');
@@ -60,7 +63,7 @@ const measure = async (iteration, keep) => {
 	const smtTime = performance.now() - start;
 
 	const skmtStore = new SMTStore(kdb);
-	const skmt = new SkipMerkleTree({ db: skmtStore, rootHash: skmtRoot, keyLength: 32 });
+	const skmt = new SkipMerkleTree({ db: skmtStore, rootHash: skmtRoot, keyLength: KEY_LENGTH });
 	const kstart = performance.now();
 	console.time('skmt-batch');
 	console.time('skmt-update-batch');
@@ -76,7 +79,7 @@ const measure = async (iteration, keep) => {
 	const skmtTime = performance.now() - kstart;
 
 	const fskmtStore = new SMTStore(fkdb);
-	const fskmt = new FastSkipMerkleTree({ db: fskmtStore, rootHash: fskmtRoot, keyLength: 32 });
+	const fskmt = new FastSkipMerkleTree({ db: fskmtStore, rootHash: fskmtRoot, keyLength: KEY_LENGTH });
 	const fkstart = performance.now();
 	console.time('fskmt-batch');
 	console.time('fskmt-update-batch');
