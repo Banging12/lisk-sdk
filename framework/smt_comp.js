@@ -75,25 +75,26 @@ const measure = async (iteration, keep) => {
 	console.timeEnd('skmt-batch');
 	const skmtTime = performance.now() - kstart;
 
-	// const fskmtStore = new SMTStore(fkdb);
-	// const fskmt = new FastSkipMerkleTree({ db: fskmtStore, rootHash: fskmtRoot, keyLength: 32 });
-	// const fkstart = performance.now();
-	// console.time('fskmt-batch');
-	// console.time('fskmt-update-batch');
-	// await skmt.update([...keys], [...values]);
-	// console.timeEnd('fskmt-update-batch');
-	// console.time('fskmt-save-batch');
-	// const fkbatch = fkdb.batch();
-	// skmtStore.finalize(fkbatch);
-	// await fkbatch.write();
-	// fskmtRoot = fskmt.rootHash;
-	// console.timeEnd('fskmt-save-batch');
-	// console.timeEnd('fskmt-batch');
-	// const fskmtTime = performance.now() - fkstart;
+	const fskmtStore = new SMTStore(fkdb);
+	const fskmt = new FastSkipMerkleTree({ db: fskmtStore, rootHash: fskmtRoot, keyLength: 32 });
+	const fkstart = performance.now();
+	console.time('fskmt-batch');
+	console.time('fskmt-update-batch');
+	await fskmt.update([...keys], [...values]);
+	console.timeEnd('fskmt-update-batch');
+	console.time('fskmt-save-batch');
+	const fkbatch = fkdb.batch();
+	skmtStore.finalize(fkbatch);
+	await fkbatch.write();
+	fskmtRoot = fskmt.rootHash;
+	console.timeEnd('fskmt-save-batch');
+	console.timeEnd('fskmt-batch');
+	const fskmtTime = performance.now() - fkstart;
 
-	if (!smt.rootHash.equals(skmt.rootHash))
-		// || !smt.rootHash.equals(fskmt.rootHash))
+	if (!smt.rootHash.equals(skmt.rootHash) || !smt.rootHash.equals(fskmt.rootHash)) {
+		console.log(smt.rootHash.toString('Hex'), fskmt.rootHash.toString('Hex'));
 		throw new Error('Mismatching roots.');
+	}
 
 	if (smtTime > skmtTime)
 		console.log(
@@ -109,6 +110,24 @@ const measure = async (iteration, keep) => {
 			chalk.red(
 				`SMT ${smtTime.toFixed(2)} ms; SKMT ${skmtTime.toFixed(2)} ms -> ${(
 					(100 * skmtTime) /
+					smtTime
+				).toFixed(2)}%`,
+			),
+		);
+	if (skmtTime > fskmtTime)
+		console.log(
+			chalk.blue(
+				`SKMT ${skmtTime.toFixed(2)} ms; FSKMT ${fskmtTime.toFixed(2)} ms -> ${(
+					(100 * fskmtTime) /
+					smtTime
+				).toFixed(2)}%`,
+			),
+		);
+	else
+		console.log(
+			chalk.red(
+				`SKMT ${skmtTime.toFixed(2)} ms; FSKMT ${fskmtTime.toFixed(2)} ms -> ${(
+					(100 * fskmtTime) /
 					smtTime
 				).toFixed(2)}%`,
 			),
